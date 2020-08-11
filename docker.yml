@@ -1,0 +1,51 @@
+- hosts: dockerhost
+  gather_facts: false
+  tasks:
+    - name: conf yum for docker
+      yum_repository:
+        name: docker
+        baseurl: https://download.docker.com/linux/centos/7/x86_64/stable/
+        gpgcheck: 0
+        state: present
+        description: my docker repo
+        enabled : true
+
+    - name: install docker
+      command: "yum install docker-ce -y --nobest"
+
+    - name: start docker service
+      service:
+        name: "docker"
+        state: started
+        enabled: yes
+
+#to pull image need docker-py which in turn needs python36
+    - name: install python36
+      package:
+        name: python36
+        state: present
+
+    - name: install docker python library
+      pip:
+        name: docker
+
+    - name: pull image
+      docker_image:
+        name: httpd
+        source: pull
+
+    - name: Copy files
+      copy:
+        src: /t1/
+        dest: /t1/
+
+    - name: run container
+      docker_container:
+        name: os1
+        image: httpd
+        mounts:
+          - source: /t1
+            target: /usr/local/apache2/htdocs
+            type: bind
+        published_ports:
+          - "8081:80"
